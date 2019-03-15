@@ -1,0 +1,55 @@
+spring:
+  datasource:
+    username: root
+    password: root
+    url: jdbc:mysql://localhost:3306/test?useUnicode=true&useSSL=false&characterEncoding=utf8&serverTimezone=GMT%2B8
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    type: com.alibaba.druid.pool.DruidDataSource
+    #常用属性配置  以下配置默认绑定不到druid上面  我们需要新建一个配置类 返回druidDataSource实例 指定为使用配置文件配置才行
+    initialSize: 5
+    minIdle: 5
+    maxActive: 20
+    maxWait: 60000
+    timeBetweenEvictionRunsMillis: 60000
+    minEvictableIdleTimeMillis: 300000
+    validationQuery: SELECT 1 FROM DUAL
+    testWhileIdle: true
+    testOnBorrow: false
+    testOnReturn: false
+    poolPreparedStatements: true
+    #配置监控统计拦截的filters，去掉后监控界面sql无法统计，'wall'用于防火墙
+    filters: stat,wall
+    maxPoolPreparedStatementPerConnectionSize: 20
+    useGlobalDataSourceStat: true
+    connectionProperties: druid.stat.mergeSql=true;druid.stat.slowSqlMillis=500
+#Jpa只用来正向更新字段和表
+  jpa:
+    hibernate:
+      ddl-auto: update
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
+mybatis-plus:
+  global-config:
+    banner: false
+    db-config:
+      #主键类型
+      id-type: id_worker
+      #字段策略 0:"忽略判断",1:"非 NULL 判断"),2:"非空判断"
+      field-strategy: not_null
+      #数据库大写下划线转换
+      capital-mode: false
+      #序列接口实现类配置
+      #key-generator: com.baomidou.springboot.xxx
+      #逻辑删除配置（下面3个配置）
+      logic-delete-value: 0
+      logic-not-delete-value: 1
+      #表名驼峰
+      table-underline: false
+      #自定义SQL注入器
+      #sql-injector: com.baomidou.mybatisplus.mapper.LogicSqlInjector
+      #自定义填充策略接口实现
+      #meta-object-handler: com.baomidou.springboot.xxx
+  configuration:
+    #字段驼峰命名
+    map-underscore-to-camel-case: false
+    cache-enabled: false
