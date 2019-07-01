@@ -35,4 +35,5 @@ public class DefinedCode {
     public static final int AUTHERROR_DISABLED = 994;
 
     public static final int USER_EXISTS = 995;
+    public static final int JSON_ERROR = 996;
 }

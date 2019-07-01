@@ -5,7 +5,9 @@ import com.baomidou.mybatisplus.generator.InjectionConfig;
 import com.baomidou.mybatisplus.generator.config.*;
 import com.baomidou.mybatisplus.generator.config.rules.NamingStrategy;
 import com.baomidou.mybatisplus.generator.engine.FreemarkerTemplateEngine;
-import java.util.*;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * @Describle This Class Is mybatis plus generator 增强
@@ -18,7 +20,7 @@ public class CodeGenerator {
      * 注意表中字段不要带下划线 每个字段尽量加上COMMENT
      */
     // 要生成的表名 可以为多个
-    static final String[] tableName = {"employee"};
+    static final String[] tableName = {"user"};
     // author
     static final String author = "ZengMin";
     // 全包名
@@ -50,7 +52,7 @@ public class CodeGenerator {
         DataSourceConfig dsc = new DataSourceConfig();
         dsc.setUrl(jdbcUrl);
         // dsc.setSchemaName("public");
-        dsc.setDriverName("com.mysql.cj.jdbc.Driver");
+        dsc.setDriverName("com.mysql.jdbc.Driver");
         dsc.setUsername(username);
         dsc.setPassword(password);
         mpg.setDataSource(dsc);
@@ -88,7 +90,7 @@ public class CodeGenerator {
 
         // 策略配置
         StrategyConfig strategy = new StrategyConfig();
-        strategy.setNaming(NamingStrategy.no_change);   // 驼峰关闭
+        strategy.setNaming(NamingStrategy.underline_to_camel);   // 表名驼峰
         strategy.setColumnNaming(NamingStrategy.no_change);// 驼峰关闭
         strategy.setSuperEntityClass(packageName + ".entity.base.EntityModel");
         strategy.setEntityLombokModel(true);

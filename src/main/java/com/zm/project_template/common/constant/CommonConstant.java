@@ -9,4 +9,5 @@ public class CommonConstant {
 
     public static final String AUTH_KEY = "123456";
 
+    public static final String TOKEN_KEY = "TOKEN";
 }
