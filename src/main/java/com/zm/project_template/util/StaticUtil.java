@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.io.BaseEncoding;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.zm.project_template.common.CommonException;
 import com.zm.project_template.common.constant.CommonConstant;
 import com.zm.project_template.common.constant.DefinedCode;
@@ -19,8 +20,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.text.NumberFormat;
 import java.util.*;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.*;
 
 /**
  * @Describle This Class Is
@@ -29,8 +29,12 @@ import java.util.concurrent.Executors;
  */
 public class StaticUtil {
 
-    // 业务线程池
-    public static ExecutorService executorService = Executors.newFixedThreadPool(5);
+    /**
+     * 业务线程池
+     */
+    public static ThreadFactory namedThreadFactory = new ThreadFactoryBuilder().setNameFormat("business-pool-%d").build();
+
+    public static ExecutorService executorService = new ThreadPoolExecutor(5, 10, 0, TimeUnit.MILLISECONDS, new LinkedBlockingDeque<>(100), namedThreadFactory, new ThreadPoolExecutor.AbortPolicy());
 
     public static NumberFormat numberFormat = NumberFormat.getNumberInstance();
 
