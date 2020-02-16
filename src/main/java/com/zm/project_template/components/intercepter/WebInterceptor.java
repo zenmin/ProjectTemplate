@@ -3,10 +3,13 @@ package com.zm.project_template.components.intercepter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
-import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
+/**
+ * @Author zm
+ */
 @Configuration
-public class WebInterceptor extends WebMvcConfigurerAdapter {
+public class WebInterceptor implements WebMvcConfigurer {
 
     @Bean
     RequestInterceptor requestInterceptor(){
@@ -22,9 +25,9 @@ public class WebInterceptor extends WebMvcConfigurerAdapter {
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(requestInterceptor())
-                .addPathPatterns("/api/**").excludePathPatterns("/api/login","/api/logOut");
+                .addPathPatterns("/api/**").excludePathPatterns("/api/login");
 
-        registry.addInterceptor(sqlInterceptor()).addPathPatterns("/order/**");
+        registry.addInterceptor(sqlInterceptor()).addPathPatterns("/api/order/**");
 
     }
 

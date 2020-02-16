@@ -30,7 +30,7 @@ import java.lang.reflect.Method;
 @Slf4j
 public class RoleAspect {
 
-    @Pointcut("execution(* com.zhuoan.codeapi.controller.*.*Controller.*(..))")
+    @Pointcut("execution(* com.zm.project_template.controller.*.*Controller.*(..))")    // 切controller子包
     private void pointCut() {
     }
 

@@ -1,5 +1,6 @@
 package com.zm.project_template.util;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -8,9 +9,14 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.zm.project_template.common.CommonException;
 import com.zm.project_template.common.constant.CommonConstant;
 import com.zm.project_template.common.constant.DefinedCode;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.lang.management.ManagementFactory;
@@ -18,48 +24,79 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.text.NumberFormat;
+import java.net.URLDecoder;
+import java.net.URLEncoder;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.regex.Pattern;
 
 /**
  * @Describle This Class Is
  * @Author ZengMin
  * @Date 2019/1/16 22:04
  */
-public class StaticUtil {
+@Slf4j
+public class CommonUtil {
 
     /**
      * 业务线程池
      */
     public static ThreadFactory namedThreadFactory = new ThreadFactoryBuilder().setNameFormat("business-pool-%d").build();
 
+    /**
+     * int corePoolSize:线程池维护线程的最小数量.
+     * int maximumPoolSize:线程池维护线程的最大数量.
+     * long keepAliveTime:空闲线程的存活时间.
+     * TimeUnit unit: 时间单位,现有纳秒,微秒,毫秒,秒枚举值.
+     * BlockingQueue<Runnable> workQueue:持有等待执行的任务队列.
+     * RejectedExecutionHandler handler: 用来拒绝一个任务的执行，有两种情况会发生这种情况。
+     * 一是在execute方法中若addIfUnderMaximumPoolSize(command)为false，即线程池已经饱和；
+     * 二是在execute方法中, 发现runState!=RUNNING || poolSize == 0,即已经shutdown,就调用ensureQueuedTaskHandled(Runnable command)，在该方法中有可能调用reject。
+     */
     public static ExecutorService executorService = new ThreadPoolExecutor(5, 10, 0, TimeUnit.MILLISECONDS, new LinkedBlockingDeque<>(100), namedThreadFactory, new ThreadPoolExecutor.AbortPolicy());
-
-    public static NumberFormat numberFormat = NumberFormat.getNumberInstance();
 
     public static ObjectMapper objectMapper = new ObjectMapper();
 
-    public static final List<String> MEDIA_IAMGE = Lists.newArrayList("jpg", "png", "jpeg", "gmp", "gif");
+    /**
+     * 校验英文
+     */
+    public static final Pattern COMPILE_ENGLISH = Pattern.compile("[A-Za-z]");
 
-    public static final List<String> MEDIA_VIDEO = Lists.newArrayList("mp4", "avi", "mpeg", "flv", "wmv", "rmvb");
+    /**
+     * 校验中文
+     */
+    public static final Pattern COMPILE_CHINESE = Pattern.compile("[\u4e00-\u9fa5]");
 
-    public static final List<String> MEDIA_MUSIC = Lists.newArrayList("mp3", "aac", "wav", "wma");
+    /**
+     * 校验手机号
+     */
+    public static final String COMPILE_PHONE = "^(13[0-9]|14[5|7]|15[0|1|2|3|4|5|6|7|8|9]|18[0|1|2|3|5|6|7|8|9])\\d{8}$";
 
-    static {
-        numberFormat.setMaximumFractionDigits(2);
-        numberFormat.setMinimumFractionDigits(2);
+
+    /**
+     * 校验用户名
+     */
+    public static final String COMPILE_USERNAME = "^[a-zA-Z][a-zA-Z0-9_]{1,15}$";
+
+    /**
+     * 常规UUID
+     *
+     * @return
+     */
+    public static synchronized String UUID() {
+        return IdWorker.get32UUID();
     }
 
-    //常规UUID
-    public static String UUID() {
-        return UUID.randomUUID().toString().replaceAll("-", "");
-    }
-
-    //UUID的hashcode +随机数
+    /**
+     * UUID的hashcode +随机数 重复几率:0.000269
+     *
+     * @return
+     */
     public static synchronized String uniqueKey() {
-        int abs = Math.abs(Integer.parseInt(String.valueOf(StaticUtil.UUID().hashCode())));
-        int random = (int) Math.random() * 1000;
+        int abs = Math.abs(Integer.parseInt(String.valueOf(CommonUtil.UUID().hashCode())));
+        int random = (int) (Math.random() * 1000);
         String temp = String.valueOf(random + abs);
         while (temp.length() < 10) {
             temp += "0";
@@ -70,40 +107,52 @@ public class StaticUtil {
         return temp;
     }
 
-    // 当前时间的唯一key 同一时间不要使用
+    /**
+     * 当前时间的唯一key 同一时间不要使用
+     *
+     * @param date
+     * @return
+     */
     public static synchronized String uniqueKeyByTime(Date date) {
         String dateTime = DateUtil.millisToDateTime(date.getTime(), "yyyyMMddHHmmssSSS");
         // 获取当前进程PID
         String name = ManagementFactory.getRuntimeMXBean().getName();
         String pid = name.split("@")[0];
-        // 获取当前线程号
+        // 获取当前线程id
         long id = Thread.currentThread().getId();
-        return (dateTime + pid + id + StaticUtil.uniqueKey()).substring(0, 30);
+        return (dateTime + pid + id + CommonUtil.uniqueKey()).substring(0, 30);
     }
 
-    // 当前时间的唯一key 同一时间不要使用
+    /**
+     * 当前时间的唯一key 同一时间不要使用
+     *
+     * @param date
+     * @param lng
+     * @return
+     */
     public static synchronized String uniqueKeyByMillis(Date date, Integer lng) {
         long dateTime = date.getTime();
         // 获取当前进程PID
         String name = ManagementFactory.getRuntimeMXBean().getName();
         String pid = name.split("@")[0];
-        // 获取当前线程号
+        // 获取当前线程id
         long id = Thread.currentThread().getId();
         if (Objects.nonNull(lng)) {
-            return (dateTime + pid + id + StaticUtil.uniqueKey()).substring(0, lng >= 30 ? 29 : lng);
+            return (dateTime + pid + id + CommonUtil.uniqueKey()).substring(0, lng >= 30 ? 29 : lng);
         } else {
-            return dateTime + pid + id + StaticUtil.uniqueKey();
+            return dateTime + pid + id + CommonUtil.uniqueKey();
         }
     }
 
-    // 同一时间使用 唯一id
+    /**
+     * 同一时间使用 唯一id 生成订单号
+     *
+     * @param date
+     * @return
+     */
     public static String getId(Date date) {
         String dateTime = DateUtil.millisToDateTime(date.getTime(), "yyyyMMddHHmm");
         return dateTime + "0" + String.valueOf(IdWorker.getId());
-    }
-
-    public static String getToken() {
-        return System.currentTimeMillis() + "" + StaticUtil.uniqueKey();
     }
 
     public static String convertMailContent(String conent, String km, String orderNo) {
@@ -118,6 +167,15 @@ public class StaticUtil {
      */
     public static String md5Hex(String code) {
         return DigestUtils.md5Hex(code);
+    }
+
+    public static String md5HexUtf8(String code) {
+        try {
+            return DigestUtils.md5Hex(code.getBytes("UTF-8"));
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
+        return code;
     }
 
     public static String md5Hex(String code, String charset) {
@@ -162,9 +220,13 @@ public class StaticUtil {
      * @param userId
      * @return
      */
-    public static String getLoginToken(Long userId) {
-        String userIdHex = StaticUtil.md5Hex(userId + CommonConstant.TOKEN_KEY);
+    public static String getLoginToken(String userId) {
+        String userIdHex = CommonUtil.md5Hex(userId + CommonConstant.TOKEN_KEY);
         return userIdHex;
+    }
+
+    public static String sha1Hex(String code) {
+        return DigestUtils.sha1Hex(code);
     }
 
     public static String sha1512Hex(String code) {
@@ -191,6 +253,18 @@ public class StaticUtil {
 
     public static Long multiplyToLong(Double multiplicand, Double multiplier) {
         return BigDecimal.valueOf(multiplicand).multiply(BigDecimal.valueOf(multiplier)).longValue();
+    }
+
+    /**
+     * @param multiplicand
+     * @param multiplier
+     * @return 相减
+     */
+    public static Double subtract(Double multiplicand, Double multiplier) {
+        Long big = multiplyToLong(multiplicand, 100d);
+        Long small = multiplyToLong(multiplier, 100d);
+        BigDecimal subtract = BigDecimal.valueOf(big).subtract(BigDecimal.valueOf(small));
+        return divide(subtract.doubleValue(), 100d);
     }
 
     /**
@@ -283,7 +357,39 @@ public class StaticUtil {
                     } else {
                         method.invoke(obj, value);
                     }
-                    System.out.println(comment[1]);
+                } catch (Exception e) {
+                    return obj;
+                }
+            }
+            return obj;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return null;
+    }
+
+    /**
+     * @param comment
+     * @return 根据顺序赋值
+     */
+    public static <T> T of(List<String> comment, Class<T> clazz) {
+        try {
+            T obj = clazz.newInstance();
+            Field[] declaredFields = clazz.getDeclaredFields();
+            // 跳过第一个字段
+            for (int i = 1; i <= declaredFields.length - 1; i++) {
+                Field field = declaredFields[i];
+                String name = field.getName();
+                name = name.substring(0, 1).toUpperCase() + name.substring(1, name.length());
+                Method method = clazz.getDeclaredMethod("set" + name, String.class);
+                try {
+                    String value = comment.get(i - 1);  // 这里-1 因为i从1开始
+                    if (StringUtils.isBlank(value)) {
+                        method.invoke(obj, "");
+                    } else {
+                        method.invoke(obj, value);
+                    }
                 } catch (Exception e) {
                     return obj;
                 }
@@ -299,7 +405,9 @@ public class StaticUtil {
     public static Map readToMap(String src, String field) {
         Map map = new HashMap();
         try {
-            map = objectMapper.readValue(src, HashMap.class);
+            if (StringUtils.isNotBlank(src)) {
+                map = objectMapper.readValue(src, HashMap.class);
+            }
         } catch (IOException e) {
             throw new CommonException(DefinedCode.JSON_ERROR, "字段：" + field + " JSON格式异常！");
         }
@@ -308,21 +416,36 @@ public class StaticUtil {
 
     public static List readToList(String src, String field) {
         List list = Lists.newArrayList();
-        try {
-            list = objectMapper.readValue(src, List.class);
-        } catch (IOException e) {
-            throw new CommonException(DefinedCode.JSON_ERROR, "字段：" + field + " JSON格式异常！");
+        if (StringUtils.isNotBlank(src)) {
+            try {
+                list = objectMapper.readValue(src, List.class);
+            } catch (IOException e) {
+                log.error("字段{}JSON格式异常！", field);
+                e.printStackTrace();
+            }
         }
         return list;
     }
 
+    /**
+     * 耗时500+ms  尽量用JSONObject.parse
+     *
+     * @param src
+     * @param tClass
+     * @param <T>
+     * @return
+     */
     public static <T> T readToClass(String src, Class<T> tClass) {
         try {
-            T t = objectMapper.readValue(src, tClass);
-            return t;
+            if (StringUtils.isNotBlank(src)) {
+                T t = objectMapper.readValue(src, tClass);
+                return t;
+            }
         } catch (IOException e) {
+            e.printStackTrace();
             throw new CommonException(DefinedCode.JSON_ERROR, "JavaType转换异常！");
         }
+        return null;
     }
 
     public static String unicodeToCn(String unicode) {
@@ -373,7 +496,7 @@ public class StaticUtil {
      * @return
      */
     public static String genSmsCode(int length) {
-        return StaticUtil.uniqueKey().substring(0, length);
+        return CommonUtil.uniqueKey().substring(0, length);
     }
 
     /**
@@ -383,9 +506,9 @@ public class StaticUtil {
      */
     public static void validateField(String... args) {
         List<String> list = Arrays.asList(args);
-        list.stream().forEach(o -> {
+        list.forEach(o -> {
             if (StringUtils.isBlank(o)) {
-                throw new CommonException(DefinedCode.PARAMSERROR, "请填写必填项！");
+                throw new CommonException(DefinedCode.PARAMS_ERROR, "请填写必填项！");
             }
         });
     }
@@ -397,9 +520,9 @@ public class StaticUtil {
      */
     public static void validateObject(Object... args) {
         List<Object> list = Arrays.asList(args);
-        list.stream().forEach(o -> {
+        list.forEach(o -> {
             if (Objects.isNull(o)) {
-                throw new CommonException(DefinedCode.PARAMSERROR, "请填写必填项！");
+                throw new CommonException(DefinedCode.PARAMS_ERROR, "请填写必填项！");
             }
         });
     }
@@ -419,4 +542,122 @@ public class StaticUtil {
         return map;
     }
 
+    /**
+     * SpringMvc下获取当前request
+     *
+     * @return
+     */
+    public static HttpServletRequest getRequest() {
+        HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder
+                .getRequestAttributes()).getRequest();
+        return request;
+    }
+
+    /**
+     * SpringMvc下获取当前session
+     *
+     * @return
+     */
+    public static HttpSession getSession() {
+        HttpSession session = getRequest().getSession();
+        return session;
+
+    }
+
+    public static String readToString(Map<String, String[]> parameterMap) {
+        try {
+            return objectMapper.writeValueAsString(parameterMap);
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+        }
+        return "";
+    }
+
+    /**
+     * @return
+     */
+    public static String urlEncode(String str) {
+        try {
+            return URLEncoder.encode(str, "UTF-8");
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
+        return str;
+    }
+
+    /**
+     * @return
+     */
+    public static String urlDecode(String str) {
+        try {
+            return URLDecoder.decode(str, "UTF-8");
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
+        return str;
+    }
+
+    /**
+     * 验证身份证号码
+     *
+     * @return
+     */
+    public static void validIdCard(String idCard) {
+        if (StringUtils.isNotBlank(idCard)) {
+            String reg = "^(\\d{6})(\\d{4})(\\d{2})(\\d{2})(\\d{3})([0-9]|X)$";
+            if (!idCard.matches(reg)) {
+                throw new CommonException(DefinedCode.PARAMS_ERROR, "身份证号码格式错误！");
+            }
+        }
+    }
+
+
+    public static void validPassword(String password) {
+        if (password.length() < 6 || password.length() > 18) {
+            throw new CommonException(DefinedCode.PARAMS_ERROR, "密码长度在6~18位之间！");
+        }
+
+        if (COMPILE_CHINESE.matcher(password).find()) {
+            throw new CommonException(DefinedCode.PARAMS_ERROR, "密码格式错误，不能包含中文！");
+        }
+
+    }
+
+    public static void validPhone(String phone) {
+        if (!phone.matches(COMPILE_PHONE)) {
+            throw new CommonException(DefinedCode.PARAMS_ERROR, "手机号有误！");
+        }
+    }
+
+    public static void validUserName(String username) {
+        if (!username.matches(COMPILE_USERNAME)) {
+            throw new CommonException(DefinedCode.PARAMS_ERROR, "格式错误，用户名由2~15位字母/数字/下划线组成！");
+        }
+    }
+
+    public static <T> Predicate<T> distinctByKey(Function<? super T, ?> keyExtractor) {
+        Set<Object> seen = ConcurrentHashMap.newKeySet();
+        return t -> seen.add(keyExtractor.apply(t));
+    }
+
+    /**
+     * Es 判断是否有英文  有英文前后加上*
+     *
+     * @param name
+     * @return
+     */
+    public static String fixEsQueryString(String name) {
+        name = name.replace(" ", "");
+        StringBuffer str = new StringBuffer();
+        for (int i = 0; i < name.length(); i++) {
+            char c = name.charAt(i);
+            if (CommonUtil.COMPILE_ENGLISH.matcher(String.valueOf(c)).find()) {
+                str.append("*" + c + "*");
+            } else {
+                str.append(c);
+            }
+        }
+        String replace = str.toString().replace("**", "*");
+        return replace.toLowerCase();
+    }
 }

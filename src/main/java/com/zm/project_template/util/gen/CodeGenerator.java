@@ -52,7 +52,7 @@ public class CodeGenerator {
         DataSourceConfig dsc = new DataSourceConfig();
         dsc.setUrl(jdbcUrl);
         // dsc.setSchemaName("public");
-        dsc.setDriverName("com.mysql.jdbc.Driver");
+        dsc.setDriverName("com.mysql.cj.jdbc.Driver");
         dsc.setUsername(username);
         dsc.setPassword(password);
         mpg.setDataSource(dsc);
@@ -92,7 +92,7 @@ public class CodeGenerator {
         StrategyConfig strategy = new StrategyConfig();
         strategy.setNaming(NamingStrategy.underline_to_camel);   // 表名驼峰
         strategy.setColumnNaming(NamingStrategy.no_change);// 驼峰关闭
-        strategy.setSuperEntityClass(packageName + ".entity.base.EntityModel");
+        strategy.setSuperEntityClass(packageName + ".entity.base.AbstractEntityModel");
         strategy.setEntityLombokModel(true);
         strategy.setRestControllerStyle(true);
         strategy.setSuperControllerClass(null);

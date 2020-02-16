@@ -4,7 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.zm.project_template.common.CommonException;
 import com.zm.project_template.common.constant.DefinedCode;
 import com.zm.project_template.util.IpHelper;
-import com.zm.project_template.util.StaticUtil;
+import com.zm.project_template.util.CommonUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.web.servlet.HandlerInterceptor;
@@ -38,7 +38,7 @@ public class RequestInterceptor implements HandlerInterceptor {
         // cacheManager验证用户登录与否
 //        userInfoUtil.getUserInfo(token);
         Map<String, String[]> parameterMap = request.getParameterMap();
-        String params = StaticUtil.objectMapper.writeValueAsString(parameterMap);
+        String params = CommonUtil.objectMapper.writeValueAsString(parameterMap);
         log.info("客户端ip:[{}]请求URL:[{}] ,请求params:[{}]",IpHelper.getRequestIpAddr(request), request.getRequestURL(), params);
 //        commonLogService.saveLog(new CommonLog(IpHelper.getRequestIpAddr(request), request.getRequestURL().toString(),params));
         return true;

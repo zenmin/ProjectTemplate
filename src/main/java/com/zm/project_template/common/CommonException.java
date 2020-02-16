@@ -1,6 +1,7 @@
 package com.zm.project_template.common;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 import javax.validation.constraints.NotNull;
 
@@ -10,6 +11,7 @@ import javax.validation.constraints.NotNull;
  * @Date 2019/1/3 19:56
  */
 @Data
+@EqualsAndHashCode(callSuper = true)
 public class CommonException extends RuntimeException {
 
     public int code;

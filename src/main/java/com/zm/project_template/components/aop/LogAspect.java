@@ -3,8 +3,8 @@ package com.zm.project_template.components.aop;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.zm.project_template.common.constant.RequestConstant;
 import com.zm.project_template.components.annotation.HandlerMethod;
+import com.zm.project_template.util.CommonUtil;
 import com.zm.project_template.util.IpHelper;
-import com.zm.project_template.util.StaticUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
@@ -53,7 +53,7 @@ public class LogAspect {
         //取方法入参
         String params = "";
         try {
-            params = StaticUtil.objectMapper.writeValueAsString(args);
+            params = CommonUtil.objectMapper.writeValueAsString(args);
         } catch (JsonProcessingException e) {
             e.printStackTrace();
         }

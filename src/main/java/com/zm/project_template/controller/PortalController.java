@@ -18,8 +18,8 @@ public class PortalController {
     String env;
 
     @RequestMapping("/api")
-    public String toApi(){
-        if(env.indexOf("dev")!=-1){
+    public String toApi() {
+        if (env.startsWith("dev")) {
             return "redirect:swagger-ui.html";
         }
         return "/";

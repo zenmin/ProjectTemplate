@@ -1,15 +1,14 @@
 package com.zm.project_template.util;
 
 import org.apache.commons.lang3.StringUtils;
+
+import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.TemporalAdjusters;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 
 public class DateUtil {
@@ -21,7 +20,7 @@ public class DateUtil {
      * @return 包含开始日期毫秒数和结束日期毫秒的map，开始key为<code>beg</code>，结束key<code>end</code>
      * @throws Exception
      */
-    public static final Map<String, Long> getCurrentDayBeginAndEnd(String currentDay, String separator) throws Exception {
+    public static Map<String, Long> getCurrentDayBeginAndEnd(String currentDay, String separator) throws Exception {
         Long beg = null;
         Long end = null;
         Map<String, Long> timeMap = new HashMap<>();
@@ -42,32 +41,12 @@ public class DateUtil {
     }
 
     /**
-     * 获取某一段日期的开始时间和结束时间。
-     *
-     * @param currentDay 日期字符串
-     * @return 包含开始日期毫秒数和结束日期毫秒的map，开始key为<code>beg</code>，结束key<code>end</code>
-     * @throws Exception
-     */
-    public static final Map<String, Date> getCurrentDayBeginAndEnd(String currentDay) {
-        Map<String, Date> timeMap = new HashMap<>();
-
-        try {
-            timeMap.put("beg", parseToDateMilis(currentDay + " 00:00:00:000"));
-            timeMap.put("end", parseToDateMilis(currentDay + " 23:59:59:999"));
-        } catch (Exception e) {
-            e.printStackTrace();
-            return null;
-        }
-        return timeMap;
-    }
-
-    /**
      * 获得当天的开始时间
      *
      * @param millis
      * @return
      */
-    public static final long startOfDayOfMilli(Long millis) {
+    public static long startOfDayOfMilli(Long millis) {
         return LocalDateTime
                 .of(Instant.ofEpochMilli(millis).atZone(ZoneId.systemDefault()).toLocalDate(), LocalTime.MIDNIGHT)
                 .atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
@@ -79,7 +58,7 @@ public class DateUtil {
      * @param millis
      * @return
      */
-    public static final long endOfDayOfMilli(Long millis) {
+    public static long endOfDayOfMilli(Long millis) {
         return LocalDateTime
                 .of(Instant.ofEpochMilli(millis).atZone(ZoneId.systemDefault()).toLocalDate(), LocalTime.MAX)
                 .atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
@@ -92,7 +71,7 @@ public class DateUtil {
      * @return 日期毫秒数
      * @throws ParseException
      */
-    public static final Long parseToMills(String formatDate) throws ParseException {
+    public static Long parseToMills(String formatDate) {
         Date dt = parseToDate(formatDate);
         return dt.getTime();
     }
@@ -105,11 +84,11 @@ public class DateUtil {
      * @return
      * @throws ParseException
      */
-    public static final int betweenMonths(String bigger, String smaller) throws ParseException {
+    public static int betweenMonths(String bigger, String smaller) {
         return betweenMonths(parseToDate(bigger), parseToDate(smaller));
     }
 
-    public static final int betweenMonths(Date bigger, Date smaller) {
+    public static int betweenMonths(Date bigger, Date smaller) {
         if (bigger.compareTo(smaller) < 0)
             return 0;
         Calendar c1 = Calendar.getInstance();
@@ -127,83 +106,27 @@ public class DateUtil {
     /**
      * 计算开始日期和结束日期之间相差的小时数。
      *
-     * @param begin 开始日期字符串
-     * @param end   结束日期字符串
-     * @return 小时数
-     * @throws ParseException
-     */
-    public static final long betweenHour(String begin, String end) throws ParseException {
-        long deltaMillis = parseToDateHour(end).getTime() - parseToDateHour(begin).getTime();
-        return Duration.ofMillis(deltaMillis).toHours();
-    }
-
-    /**
-     * 计算开始日期和结束日期之间相差的小时数。
-     *
      * @param begin 开始日期毫秒数
      * @param end   结束日期毫秒数
      * @return 小时数
      * @throws ParseException
      */
-    public static final long betweenHour(long begin, long end) {
+    public static long betweenHour(long begin, long end) {
         long deltaMillis = end - begin;
         return Duration.ofMillis(deltaMillis).toHours();
     }
 
     /**
-     * 将完整日期解析为包含年月日时分的日期，不包括秒。
+     * 计算开始日期和结束日期之间相差的分钟。
      *
-     * @param formatDate 原始完整日期字符串
-     * @return 包含年月日时分的日期，秒为0
+     * @param begin 开始日期毫秒数
+     * @param end   结束日期毫秒数
+     * @return 分钟数
      * @throws ParseException
      */
-    public static final Date parseToDateHour(String formatDate) {
-        try {
-            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm");
-            if (formatDate.contains("年") || formatDate.contains("月") || formatDate.contains("日")) {
-                sdf = new SimpleDateFormat("yyyy年MM月dd日 HH时mm分");
-                Date dt = sdf.parse(formatDate);
-                return dt;
-            }
-            if (formatDate.contains("/")) {
-                sdf = new SimpleDateFormat("yyyy/MM/dd HH/mm");
-                Date dt = sdf.parse(formatDate);
-                return dt;
-            }
-            Date dt = sdf.parse(formatDate);
-            return dt;
-        } catch (ParseException e) {
-           e.printStackTrace();
-        }
-        return null;
-    }
-
-    /**
-     * 将字符串日期格式化为日期对象。
-     *
-     * @param formatDate 字符串日期
-     * @return 日期对象
-     * @throws ParseException
-     */
-    public static final Date parseToDateMilis(String formatDate) {
-        try {
-            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-            if (formatDate.contains("年") || formatDate.contains("月") || formatDate.contains("日")) {
-                sdf = new SimpleDateFormat("yyyy年MM月dd日 HH时mm分ss秒");
-                Date dt = sdf.parse(formatDate);
-                return dt;
-            }
-            if (formatDate.contains("/")) {
-                sdf = new SimpleDateFormat("yyyy/MM/dd HH/mm/ss");
-                Date dt = sdf.parse(formatDate);
-                return dt;
-            }
-            Date dt = sdf.parse(formatDate);
-            return dt;
-        } catch (ParseException e) {
-            e.printStackTrace();
-        }
-        return null;
+    public static long betweenMinutes(long begin, long end) {
+        long deltaMillis = end - begin;
+        return Math.abs(Duration.ofMinutes(deltaMillis / 1000 / 60).toMinutes());
     }
 
     /**
@@ -213,8 +136,7 @@ public class DateUtil {
      * @return 日期对象
      * @throws ParseException
      */
-    public static final Date parseToDate(String formatDate) {
-
+    public static Date parseToDate(String formatDate) {
         try {
             SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
             if (formatDate.contains("年") || formatDate.contains("月") || formatDate.contains("日")) {
@@ -242,25 +164,9 @@ public class DateUtil {
      * @return 日期对象
      * @throws ParseException
      */
-    public static final Date parseToHour(String formatDate) throws ParseException {
-        SimpleDateFormat sdf = new SimpleDateFormat("HH:mm");
-        if (formatDate.contains("时") || formatDate.contains("分")) {
-            sdf = new SimpleDateFormat("HH时mm分");
-            Date dt = sdf.parse(formatDate);
-            return dt;
-        }
-        if (formatDate.contains("/")) {
-            sdf = new SimpleDateFormat("HH/mm");
-            Date dt = sdf.parse(formatDate);
-            return dt;
-        }
-        Date dt = sdf.parse(formatDate);
-        return dt;
-    }
-
-    public static final Date parseToPattern(String formatDate, String pattern) {
+    public static Date parseToTime(String formatDate) {
         try {
-            SimpleDateFormat sdf = new SimpleDateFormat(pattern);
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
             Date dt = sdf.parse(formatDate);
             return dt;
         } catch (ParseException e) {
@@ -270,44 +176,13 @@ public class DateUtil {
     }
 
     /**
-     * 将字符串日期格式化为包含年月日的日期，时分秒为0.
-     *
-     * @param formatDate 字符串日期
-     * @return 日期对象
-     * @throws ParseException
-     */
-    public static final Date parseToHourMillis(String formatDate) throws ParseException {
-        SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss");
-        if (formatDate.contains("时") || formatDate.contains("分") || formatDate.contains("秒")) {
-            sdf = new SimpleDateFormat("HH时mm分ss秒");
-            Date dt = sdf.parse(formatDate);
-            return dt;
-        }
-        if (formatDate.contains("/")) {
-            sdf = new SimpleDateFormat("HH/mm/ss");
-            Date dt = sdf.parse(formatDate);
-            return dt;
-        }
-        Date dt = sdf.parse(formatDate);
-        return dt;
-    }
-
-    /**
      * 获取某一日期是当月的第几天，从1开始。
      *
      * @param instant 日期毫秒数
      * @return 当月第几天
      */
-    public static final int getDayOfMonth(long instant) {
+    public static int getDayOfMonth(long instant) {
         return Instant.ofEpochMilli(instant).atZone(ZoneId.systemDefault()).getDayOfMonth();
-    }
-
-    public static String getBeginOfCurrentMonth(SimpleDateFormat format) {
-        Calendar c = Calendar.getInstance();
-        c.add(Calendar.MONTH, 0);
-        c.set(Calendar.DAY_OF_MONTH, 1);//设置为1号,当前日期既为本月第一天
-        String first = format.format(c.getTime());
-        return first;
     }
 
     public static Date getBeginOfCurrentMonth() {
@@ -323,72 +198,69 @@ public class DateUtil {
         return c.getTime();
     }
 
-    public static String getEndOfCurrentMonth(long instant, SimpleDateFormat format) {
-        Calendar ca = Calendar.getInstance();
-        ca.set(Calendar.DAY_OF_MONTH, ca.getActualMaximum(Calendar.DAY_OF_MONTH));
-        String last = format.format(ca.getTime());
-        return last;
-    }
 
-    public static final long betweenDays(String begin, String end) throws ParseException {
+    public static long betweenDays(String begin, String end) {
         long beginTime = parseToMills(begin);
         long endTime = parseToMills(end);
         return countDays(endTime - beginTime);
     }
 
-    public static final long betweenDays(Date begin, Date end) {
+    public static long betweenDays(Date begin, Date end) {
         long beginTime = begin.getTime();
         long endTime = end.getTime();
         return countDays(endTime - beginTime);
     }
 
-    public static final long betweetMillis(Date begin, Date end) {
+    public static long betweetMillis(Date begin, Date end) {
         long beginTime = begin.getTime();
         long endTime = end.getTime();
         return countMillis(endTime - beginTime);
     }
 
-    public static final long countDays(long deltaMillis) {
+    public static long countDays(long deltaMillis) {
         return Duration.ofMillis(deltaMillis).toDays();
     }
 
-    public static final long countMillis(long deltaMillis) {
+    public static long countMillis(long deltaMillis) {
         return Duration.ofMillis(deltaMillis).toMillis();
     }
 
 
-    public static final long plusMonths(long instant, long months) {
+    public static long plusMonths(long instant, long months) {
         return Instant.ofEpochMilli(instant).atZone(ZoneId.systemDefault()).plusMonths(months).toInstant().toEpochMilli();
     }
 
-    public static final long plusDays(long instant, long days) {
+    public static long plusDays(long instant, long days) {
         return Instant.ofEpochMilli(instant).atZone(ZoneId.systemDefault()).plusDays(days).toInstant().toEpochMilli();
     }
 
-    public static final long minusDays(long instant, long days) {
+    public static long minusDays(long instant, long days) {
         return Instant.ofEpochMilli(instant).atZone(ZoneId.systemDefault()).minusDays(days).toInstant().toEpochMilli();
     }
 
-    public static final Long plusDays(String currentDay, long days){
-        try{
+    public static Long plusDays(String currentDay, long days) {
+        try {
             long current = parseToMills(currentDay);
             return plusDays(current, days);
-        } catch (ParseException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
         return null;
     }
 
-    public static final Date plusYear(String currentDay, int year) throws ParseException {
+    public static Date plusYear(String currentDay, int year) {
         return new Date(plusDays(currentDay, year * 365));
     }
 
-    public static final String plusDaysToString(String currentDay, long day, String pattern) throws ParseException {
+    public static String plusDaysToString(String currentDay, long day, String pattern) {
+        if (StringUtils.isBlank(pattern)) {
+            pattern = "yyyy-MM-dd";
+        }
         long millis = plusDays(currentDay, day);
         return millisToDateTime(millis, pattern);
     }
 
-    public static final Date plusDaysToDate(String currentDay, long days) throws ParseException {
+    public static Date plusDaysToDate(String currentDay, long days) {
         long millis = plusDays(currentDay, days);
         return new Date(millis);
     }
@@ -401,7 +273,7 @@ public class DateUtil {
      * @return 计算后的日期
      * @throws ParseException
      */
-    public static final Date plusDaysToDate(Date currentDay, long days) {
+    public static Date plusDaysToDate(Date currentDay, long days) {
         long millis = plusDays(currentDay.getTime(), days);
         return new Date(millis);
     }
@@ -413,7 +285,7 @@ public class DateUtil {
      * @param seconds 描述
      * @return 计算后的日期毫秒数
      */
-    public static final long plusSeconds(long instant, long seconds) {
+    public static long plusSeconds(long instant, long seconds) {
         return Instant.ofEpochMilli(instant).atZone(ZoneId.systemDefault()).plusSeconds(seconds).toInstant().toEpochMilli();
     }
 
@@ -424,7 +296,7 @@ public class DateUtil {
      * @param minutes 分钟数
      * @return 计算后的日期毫秒数
      */
-    public static final long plusMinutes(long instant, long minutes) {
+    public static long plusMinutes(long instant, long minutes) {
         return Instant.ofEpochMilli(instant).atZone(ZoneId.systemDefault()).plusMinutes(minutes).toInstant().toEpochMilli();
     }
 
@@ -435,21 +307,38 @@ public class DateUtil {
      * @param hours   小时数
      * @return 计算后日期
      */
-    public static final Date plusHoursToDate(Date srcDate, int hours) {
+    public static Date plusHoursToDate(Date srcDate, int hours) {
         long milli = Instant.ofEpochMilli(srcDate.getTime()).atZone(ZoneId.systemDefault()).plusHours(hours).toInstant().toEpochMilli();
         return new Date(milli);
     }
 
-    public static final String millisToDateTime(Long millis, String pattern) {
+    public static String millisToDateTime(Long millis, String pattern) {
+        if (StringUtils.isBlank(pattern)) {
+            pattern = "yyyy-MM-dd HH:mm:ss";
+        }
         LocalDateTime time = Instant.ofEpochMilli(millis).atZone(ZoneId.systemDefault()).toLocalDateTime();
         return time.format(DateTimeFormatter.ofPattern(pattern));
     }
 
-    public static final String getBeginOfTheMouth(long instant) {
+    /**
+     * 传入Data类型日期，返回字符串类型时间（ISO8601标准时间）
+     *
+     * @param date
+     * @return
+     */
+    public static String getISO8601Timestamp(Date date) {
+        TimeZone tz = TimeZone.getTimeZone("Asia/Shanghai");
+        DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+        df.setTimeZone(tz);
+        String nowAsISO = df.format(date);
+        return nowAsISO;
+    }
+
+    public static String getBeginOfTheMouth(long instant) {
         return Instant.ofEpochMilli(instant).atZone(ZoneId.systemDefault()).with(TemporalAdjusters.firstDayOfMonth()).toString();
     }
 
-    public static final boolean isBeforeThanToday(Date day) throws ParseException {
+    public static boolean isBeforeThanToday(Date day) throws ParseException {
         long now = System.currentTimeMillis();
         return day.getTime() < now;
     }
@@ -510,29 +399,56 @@ public class DateUtil {
         return new Date(millis);
     }
 
-    public static boolean hasTimeUnionSet(Date beg1, Date end1, Date beg2, Date end2){
+    public static boolean hasTimeUnionSet(Date beg1, Date end1, Date beg2, Date end2) {
         if (beg2.compareTo(end1) >= 0 || beg1.compareTo(end2) >= 0)
             return false;
         return true;
     }
 
-    public static String getNowDate(){
-        String date = DateUtil.millisToDateTime(new Date().getTime(), "yyyy-MM-dd");
-        return date;
+    public static String getNowDate() {
+        return LocalDate.now().toString();
     }
 
-    public static String getNowTime(){
-        String date = DateUtil.millisToDateTime(new Date().getTime(), "yyyy-MM-dd HH:mm:ss");
-        return date;
+    public static String getNowDateBegin() {
+        return getNowDate() + " 00:00:00";
     }
 
-    public static Date millisToDate(Long millis){
+    public static String getNowDateEnd() {
+        return getNowDate() + " 23:59:59";
+    }
+
+    public static String getNowTime() {
+        return LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+    }
+
+    public static String getNowTimeMillis() {
+        return LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss:SSS"));
+    }
+
+    public static Date millisToDate(Long millis) {
         Date date = new Date();
         date.setTime(millis);
         return date;
     }
 
-    public static void main(String[] args) throws Exception {
+    /**
+     * @param date
+     * @return 获取星期
+     */
+    public static int getDay(String date) {
+        long time = DateUtil.parseToDate(date).getTime();
+        int value = Instant.ofEpochMilli(time).atZone(ZoneId.systemDefault()).getDayOfWeek().getValue();
+        return value;
     }
 
+    /**
+     * yyyyMM 获取本月
+     *
+     * @return
+     */
+    public static String getMonth() {
+        LocalDate now = LocalDate.now();
+        Integer monthValue = now.getMonthValue();
+        return now.getYear() + "" + (monthValue < 10 ? 0 + monthValue.toString() : monthValue);
+    }
 }

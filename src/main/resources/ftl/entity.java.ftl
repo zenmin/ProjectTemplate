@@ -13,15 +13,15 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 </#if>
 import com.baomidou.mybatisplus.annotation.TableField;
+import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
 
 /**
-* Create by Code Generator
+*
 * JPA只用来正向生成数据库表和字段 如果不需要此字段更新 请加上注解@TableField(exist = false)和@Transient
-* @Author ZengMin
+* @Author ${author}
 * @Date ${.now?string["yyyy-MM-dd HH:mm:ss"]}
-* https://github.com/zenmin/ProjectTemplate
 */
-
 <#if entityLombokModel>
 @Data
     <#if superEntityClass??>
@@ -34,10 +34,12 @@ import com.baomidou.mybatisplus.annotation.TableField;
 @TableName("${table.name}")
 </#if>
 <#if swagger2>
-@ApiModel(value="${entity}", description="${table.comment!}")
+@ApiModel(value="${table.comment!}")
 </#if>
 @Table(name = "${table.name}")
 @Entity
+@AllArgsConstructor
+@NoArgsConstructor
 <#if superEntityClass??>
 public class ${entity} extends ${superEntityClass}<#if activeRecord><${entity}></#if> {
 <#elseif activeRecord>
@@ -45,13 +47,6 @@ public class ${entity} extends Model<${entity}> {
 <#else>
 public class ${entity} implements Serializable {
 </#if>
-
-    <#if swagger2>
-    @ApiModelProperty(value = "创建时间 格式：yyyy-MM-dd HH:mm:ss")
-    </#if>
-    @TableField(exist = false)
-    @Transient
-    private String createTimeQuery;
 <#-- ----------  BEGIN 字段循环遍历  ---------->
 <#list table.fields as field>
     <#if field.keyFlag>
@@ -59,13 +54,13 @@ public class ${entity} implements Serializable {
     </#if>
 
     <#if field.comment!?length gt 0>
-    <#if swagger2>
+        <#if swagger2>
     @ApiModelProperty(value = "${field.comment}")
-    <#else>
+        <#else>
     /**
      * ${field.comment}
      */
-    </#if>
+        </#if>
     </#if>
     <#if field.keyFlag>
     <#-- 主键 -->
@@ -84,8 +79,8 @@ public class ${entity} implements Serializable {
         <#else>
     @TableField(fill = FieldFill.${field.fill})
         </#if>
-    <#elseif field.convert>
-    @TableField("${field.name}")
+    <#--<#elseif field.convert>-->
+    <#--@TableField("${field.name}")-->
     </#if>
 <#-- 乐观锁注解 -->
     <#if (versionFieldName!"") == field.name>

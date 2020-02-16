@@ -1,30 +1,28 @@
 package ${package.ServiceImpl};
 
+import ${cfg.packageName}.common.constant.CommonConstant;
 import ${package.Service}.${table.serviceName};
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.google.common.collect.Lists;
-import ${package.Entity}.DO.Pager;
+import ${package.Entity}.base.Pager;
 import ${package.Entity}.${entity};
 import ${package.Mapper}.${entity}Mapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.stereotype.Service;
-import org.apache.commons.lang3.StringUtils;
-import ${cfg.packageName}.util.DateUtil;
+import ${cfg.packageName}.common.CommonException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
 
 /**
-* Create Code Generator
-* @Author ZengMin
+*
+* @Author ${author}
 * @Date ${.now?string["yyyy-MM-dd HH:mm:ss"]}
-* https://github.com/zenmin/ProjectTemplate
 */
-
 @Service
 public class ${table.serviceImplName} implements ${table.serviceName} {
 
@@ -32,30 +30,24 @@ public class ${table.serviceImplName} implements ${table.serviceName} {
     ${entity}Mapper ${table.name}Mapper;
 
     @Override
-    public ${entity} getOne(Long id){
+    public ${entity} getOne(String id){
         return ${table.name}Mapper.selectById(id);
     }
 
     @Override
     public List<${entity}> list(${entity} ${table.name}) {
-        if(StringUtils.isNotBlank(${table.name}.getCreateTimeQuery())){
-            ${table.name}.setCreateTime(DateUtil.parseToDate(${table.name}.getCreateTimeQuery()));
-        }
         List<${entity}> ${table.name}s = ${table.name}Mapper.selectList(new QueryWrapper<>(${table.name}));
         return ${table.name}s;
     }
 
     @Override
     public Pager listByPage(Pager pager, ${entity} ${table.name}) {
-        if(StringUtils.isNotBlank(${table.name}.getCreateTimeQuery())){
-            ${table.name}.setCreateTime(DateUtil.parseToDate(${table.name}.getCreateTimeQuery()));
-        }
         IPage<${entity}> ${table.name}IPage = ${table.name}Mapper.selectPage(new Page<>(pager.getNum(), pager.getSize()), new QueryWrapper<>(${table.name}));
-        return pager.of(${table.name}IPage);
+        return Pager.of(${table.name}IPage);
     }
 
     @Override
-    @Transactional
+    @Transactional(rollbackFor = CommonException.class)
     public ${entity} save(${entity} ${table.name}) {
         if(Objects.nonNull(${table.name}.getId())){
             ${table.name}Mapper.updateById(${table.name});
@@ -66,16 +58,9 @@ public class ${table.serviceImplName} implements ${table.serviceName} {
     }
 
     @Override
-    @Transactional
+    @Transactional(rollbackFor = CommonException.class)
     public boolean delete(String ids) {
-        List<Long> list = Lists.newArrayList();
-        if(ids.indexOf(",") != -1){
-            List<String> asList = Arrays.asList(ids.split(","));
-            asList.stream().forEach(o -> list.add(Long.valueOf(o)));
-        }else {
-            list.add(Long.valueOf(ids));
-        }
-        int i = ${table.name}Mapper.deleteBatchIds(list);
+        int i = ${table.name}Mapper.deleteBatchIds(Arrays.asList(ids.split(CommonConstant.MAGIC_SPLIT)));
         return i > 0;
     }
 

@@ -2,13 +2,10 @@ package com.zm.project_template.components.intercepter;
 
 import com.zm.project_template.common.CommonException;
 import com.zm.project_template.common.constant.DefinedCode;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.servlet.HandlerInterceptor;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
-
 /**
  * @Describle This Class Is 防止sql注入拦截器
  * @Author ZengMin

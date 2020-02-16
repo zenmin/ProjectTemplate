@@ -16,11 +16,11 @@
 
     <properties>
         <java.version>1.8</java.version>
-        <mybatis.springboot.version>2.0.0</mybatis.springboot.version>
-        <mybatis.plus.springboot.version>3.1.0</mybatis.plus.springboot.version>
+        <mybatis.plus.springboot.version>3.1.2</mybatis.plus.springboot.version>
         <druid.version>1.1.10</druid.version>
         <swagger.springboot.version>1.8.0.RELEASE</swagger.springboot.version>
         <guava.version>26.0-jre</guava.version>
+        <fastjson.version>1.2.54</fastjson.version>
     </properties>
 
     <dependencies>
@@ -37,13 +37,9 @@
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.mybatis.spring.boot</groupId>
-            <artifactId>mybatis-spring-boot-starter</artifactId>
-            <version>${mybatis.springboot.version}</version>
-        </dependency>
-        <dependency>
             <groupId>mysql</groupId>
             <artifactId>mysql-connector-java</artifactId>
+            <version>8.0.15</version>
             <scope>runtime</scope>
         </dependency>
         <dependency>
@@ -106,10 +102,21 @@
             <artifactId>java-jwt</artifactId>
             <version>3.7.0</version>
         </dependency>
+        <!--httpClient相关-->
         <dependency>
             <groupId>commons-httpclient</groupId>
             <artifactId>commons-httpclient</artifactId>
             <version>3.1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpcore</artifactId>
+            <version>4.4.10</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpclient</artifactId>
+            <version>4.5.6</version>
         </dependency>
         <!--Swagger-->
         <dependency>
@@ -123,6 +130,12 @@
             <artifactId>pinyin4j</artifactId>
             <version>2.5.0</version>
         </dependency>
+        <!--fastjson-->
+        <dependency>
+            <groupId>com.alibaba</groupId>
+            <artifactId>fastjson</artifactId>
+            <version>${fastjson.version}</version>
+        </dependency>
     </dependencies>
 
     <build>
@@ -130,6 +143,25 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>com.spotify</groupId>
+                <artifactId>docker-maven-plugin</artifactId>
+                <version>0.4.13</version>
+                <configuration>
+                    <imageName>${project.artifactId}</imageName>
+                    <baseImage>java:8</baseImage>
+                    <entryPoint>
+                        ["java","-Xms256m","-Xmx256m","-Duser.timezone=GMT+08","-Dfile.encoding=utf-8","-Dsun.jnu.encoding=utf-8","-jar","/${project.build.finalName}.jar"]
+                    </entryPoint>
+                    <resources>
+                        <resource>
+                            <targetPath>/</targetPath>
+                            <directory>${project.build.directory}</directory>
+                            <include>${project.build.finalName}.jar</include>
+                        </resource>
+                    </resources>
+                </configuration>
             </plugin>
         </plugins>
     </build>
