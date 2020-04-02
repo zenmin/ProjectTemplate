@@ -44,12 +44,12 @@ mybatis-plus:
       logic-delete-value: 0
       logic-not-delete-value: 1
       #表名驼峰
-      table-underline: false
+      table-underline: true
       #自定义SQL注入器
       #sql-injector: com.baomidou.mybatisplus.mapper.LogicSqlInjector
       #自定义填充策略接口实现
       #meta-object-handler: com.baomidou.springboot.xxx
   configuration:
     #字段驼峰命名
-    map-underscore-to-camel-case: false
+    map-underscore-to-camel-case: true
     cache-enabled: false

@@ -1,24 +1,22 @@
 package com.zm.project_template.components.aop;
 
 import com.zm.project_template.common.CommonException;
+import com.zm.project_template.common.constant.CommonConstant;
 import com.zm.project_template.common.constant.DefinedCode;
-import com.zm.project_template.common.constant.RequestConstant;
 import com.zm.project_template.components.annotation.RequireRole;
 import lombok.extern.slf4j.Slf4j;
-import org.aspectj.lang.ProceedingJoinPoint;
-import org.aspectj.lang.Signature;
-import org.aspectj.lang.annotation.Around;
+import org.apache.commons.lang3.StringUtils;
+import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.Aspect;
+import org.aspectj.lang.annotation.Before;
 import org.aspectj.lang.annotation.Pointcut;
 import org.aspectj.lang.reflect.MethodSignature;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
-import org.springframework.web.context.request.RequestAttributes;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
 
-import javax.servlet.http.HttpServletRequest;
-import java.io.IOException;
 import java.lang.reflect.Method;
+import java.util.Arrays;
+import java.util.Objects;
 
 /**
  * @Describle This Class Is 全局权限验证Aspect
@@ -30,46 +28,62 @@ import java.lang.reflect.Method;
 @Slf4j
 public class RoleAspect {
 
-    @Pointcut("execution(* com.zm.project_template.controller.*.*Controller.*(..))")    // 切controller子包
-    private void pointCut() {
+//    @Autowired
+//    LogsService logsService;
+
+//    @Autowired
+//    UserService userService;
+
+    /**
+     * controller子包 下的方法 加注解 同时满足
+     * 优先级 高
+     */
+    @Pointcut("@annotation(com.zm.project_template.components.annotation.RequireRole) && execution(* com.zm.project_template.controller.*.*Controller.*(..))")
+    @Order(1)
+    private void pointCutMethod() {
     }
 
-    @Around("@annotation(requireRole) && pointCut()")
-    public Object execAspect(ProceedingJoinPoint joinPoint, RequireRole requireRole) throws Throwable {
-        RequestAttributes requestAttributes = RequestContextHolder.getRequestAttributes();
-        ServletRequestAttributes servletRequestAttributes = (ServletRequestAttributes) requestAttributes;
-        HttpServletRequest request = servletRequestAttributes.getRequest();
-        boolean b = this.validRole(joinPoint, request);
-        if (b) {
-            return joinPoint.proceed();
-        } else {
-            throw new CommonException(DefinedCode.NOTAUTH, "您没有权限操作！");
+    /**
+     * controller的class加注解
+     * 优先级 低
+     */
+    @Pointcut("@within(com.zm.project_template.components.annotation.RequireRole)")
+    @Order(2)
+    private void pointCutClass() {
+    }
+
+    /**
+     * 两种情况满足一个即可
+     */
+    @Before("(pointCutMethod() || pointCutClass())")
+    public void execAspect(JoinPoint joinPoint) {
+        MethodSignature signature = (MethodSignature) joinPoint.getSignature();
+        Method method = signature.getMethod();
+        // 先从方法上取
+        RequireRole requireRole = method.getAnnotation(RequireRole.class);
+        // 方法上没有注解从类上取
+        if (Objects.isNull(requireRole)) {
+            requireRole = method.getDeclaringClass().getAnnotation(RequireRole.class);
+        }
+        boolean b = this.validRole(requireRole);
+        if (!b) {
+            throw new CommonException(DefinedCode.NOTAUTH_OPTION, "您没有权限操作！");
         }
     }
 
-    private boolean validRole(ProceedingJoinPoint joinPoint, HttpServletRequest request) throws IOException {
-        String token = request.getHeader(RequestConstant.TOKEN);
-        Object attribute = request.getAttribute(token);
-//        User user = StaticUtil.objectMapper.readValue(JSONUtil.toJSONString(attribute), User.class);
-//        String userRoleCode = user.getRoleCode();
-//        if (StringUtils.isBlank(userRoleCode)) {
-//            return false;
-//        }
-        Signature signature = joinPoint.getSignature();
-        if (signature instanceof MethodSignature) {
-            MethodSignature methodSignature = (MethodSignature) signature;
-            Method method = methodSignature.getMethod();
-            RequireRole annotation = method.getAnnotation(RequireRole.class);
-            String[] roleCode = annotation.value();
-//            if (userRoleCode.equals(CommonConstant.ROLE_ADMIN) || Arrays.asList(roleCode).contains(userRoleCode)) {
-//                // admin权限不受影响
+    private boolean validRole(RequireRole requireRole) {
+//        User user = userService.getLoginUser();
+        String userRoleCode = "";//user.getRoleCode();
+        if (StringUtils.isBlank(userRoleCode)) {
+            return false;
+        }
+        String[] roleCode = requireRole.value();
+        // admin权限不受影响
+        if (userRoleCode.equals(CommonConstant.ROLE_ADMIN) || Arrays.asList(roleCode).contains(userRoleCode)) {
             return true;
-//            } else {
-//                // 无操作权限
-//                return false;
-//            }
         } else {
-            throw new IllegalArgumentException("该注解仅用于Controller方法上！");
+            // 无操作权限
+            return false;
         }
     }
 

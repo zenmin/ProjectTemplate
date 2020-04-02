@@ -12,8 +12,8 @@ import java.lang.annotation.*;
 @Documented
 public @interface HandlerMethod {
 
-    String optName() default  "";
+    String optName() default "";   // 操作名称
 
-    String optDesc() default  "";
+    String optDesc() default "";   // 操作描述
 
 }

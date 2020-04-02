@@ -22,4 +22,5 @@ public class DefinedCode {
 
     public static final int FILE_UPLOAD_ERROR = 993;    // 文件上传异常
     public static final int USER_LIMIT_ERROR = 701;
+    public static final int NOTAUTH_OPTION = 700;   // 无操作权限
 }

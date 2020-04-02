@@ -8,25 +8,27 @@ import com.zm.project_template.components.annotation.RateLimiter;
 import com.zm.project_template.components.business.GuavaCacheUtil;
 import com.zm.project_template.util.CommonUtil;
 import com.zm.project_template.util.IpHelper;
-import org.aspectj.lang.ProceedingJoinPoint;
-import org.aspectj.lang.Signature;
-import org.aspectj.lang.annotation.Around;
+import lombok.extern.slf4j.Slf4j;
+import org.aspectj.lang.JoinPoint;
+import org.aspectj.lang.annotation.Aspect;
+import org.aspectj.lang.annotation.Before;
 import org.aspectj.lang.annotation.Pointcut;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.annotation.Order;
+import org.springframework.stereotype.Component;
 
 import java.lang.reflect.Method;
 import java.util.Objects;
 
 /**
- * @Describle This Class Is 全局限流验证Aspect
+ * @Describle This Class Is 限流Aspect
  * @Author ZengMin
  * @Date 2019/6/29 16:40
  */
-//@Scope
-//@Component
-//@Aspect
-//@Slf4j
+@Component
+@Aspect
+@Slf4j
 public class RateLimiterAspect {
 
 //    @Autowired
@@ -36,45 +38,46 @@ public class RateLimiterAspect {
     GuavaCacheUtil guavaCache;
 
     /**
-     * 每秒最多处理一个请求
+     * 全局 ：每秒最多处理10个请求
      */
-    public static com.google.common.util.concurrent.RateLimiter guavaLimiter = com.google.common.util.concurrent.RateLimiter.create(1.0);
+    public static com.google.common.util.concurrent.RateLimiter guavaLimiter = com.google.common.util.concurrent.RateLimiter.create(10.0);
 
-    @Pointcut("@annotation(org.springframework.web.bind.annotation.PostMapping)")
-    private void pointCut() {
+    /**
+     * 方法+注释 切入点
+     * 优先级 高
+     */
+    @Pointcut("@annotation(com.zm.project_template.components.annotation.RateLimiter)")
+    @Order(1)
+    private void pointMethod() {
     }
 
-    @Pointcut("@annotation(org.springframework.web.bind.annotation.RequestMapping)")
-    private void pointCutRequestMapping() {
+    /**
+     * 类+注释切入点
+     * 优先级 低
+     */
+    @Pointcut("@within(com.zm.project_template.components.annotation.RateLimiter)")
+    @Order(2)
+    private void pointCutClass() {
     }
 
-    @Pointcut("@annotation(org.springframework.web.bind.annotation.GetMapping)")
-    private void pointCutGetMapping() {
+    /**
+     * 两个 满足一个
+     *
+     * @param joinPoint
+     */
+    @Before("pointMethod() || pointCutClass()")
+    public void execAspect(JoinPoint joinPoint) {
+        MethodSignature methodSignature = (MethodSignature) joinPoint.getSignature();
+        Method method = methodSignature.getMethod();
+        this.validRate(method);
     }
 
-    @Around("pointCut() || pointCutRequestMapping() || pointCutGetMapping()")
-    public Object execAspect(ProceedingJoinPoint joinPoint) throws Throwable {
-        this.validRate(joinPoint);
-        return joinPoint.proceed();
-    }
-
-    private void validRate(ProceedingJoinPoint joinPoint) {
-        Signature signature = joinPoint.getSignature();
-        if (signature instanceof MethodSignature) {
-            MethodSignature methodSignature = (MethodSignature) signature;
-            Method method = methodSignature.getMethod();
-            // 判断限流注解在方法上 还是在类上
-            RateLimiter methodRateLimiter = method.getAnnotation(RateLimiter.class);
-            // 如果在方法上  以方法的为准
-            if (Objects.nonNull(methodRateLimiter)) {
-                this.limit(methodRateLimiter, method);
-            } else {
-                RateLimiter classRateLimiter = method.getDeclaringClass().getAnnotation(RateLimiter.class);
-                if (Objects.nonNull(classRateLimiter)) {
-                    this.limit(classRateLimiter, method);
-                }
-            }
+    private void validRate(Method method) {
+        RateLimiter rateLimiter = method.getAnnotation(RateLimiter.class);
+        if (Objects.isNull(rateLimiter)) {
+            rateLimiter = method.getDeclaringClass().getAnnotation(RateLimiter.class);
         }
+        this.limit(rateLimiter, method);
     }
 
     private boolean limit(RateLimiter rateLimiter, Method method) {
@@ -86,7 +89,7 @@ public class RateLimiterAspect {
         if (CommonConstant.LIMIT_USER.equals(target)) {
             String id = "";//userService.getLoginUser().getId();
             int limit = Integer.parseInt(value);
-            String key = CacheConstant.USER_LIMIT + method.getName() + id;
+            String key = CacheConstant.USER_LIMIT + method.getName() + ":" + id;
             // 判断此用户在系统的操作次数
             Object o = guavaCache.get(key);
             if (Objects.nonNull(o)) {
@@ -114,7 +117,7 @@ public class RateLimiterAspect {
         // IP全局限流
         if (CommonConstant.LIMIT_USER_IP.equals(target)) {
             int limit = Integer.parseInt(value);
-            String key = CacheConstant.USER_LIMIT + method.getName() + IpHelper.getRequestIpAddr(CommonUtil.getRequest());
+            String key = CacheConstant.USER_LIMIT + method.getName() + ":" + IpHelper.getRequestIpAddr(CommonUtil.getRequest());
             // 判断此IP在系统的操作次数
             Object o = guavaCache.get(key);
             if (Objects.nonNull(o)) {

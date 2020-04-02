@@ -26,7 +26,7 @@ public abstract class AbstractEntityModel implements Serializable {
     @Id
     @Column(unique = true, columnDefinition = "varchar(32) COMMENT '主键'")
     @ApiModelProperty(value = "主键 (更新传入)")
-    private String id;
+    private Long id;
 
     @JsonFormat(timezone = "GMT+8", pattern = "yyyy-MM-dd HH:mm:ss")
     @Column(columnDefinition = "datetime default now() COMMENT '创建时间' ")
