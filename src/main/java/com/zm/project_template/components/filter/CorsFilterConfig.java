@@ -11,8 +11,8 @@ import org.springframework.web.filter.CorsFilter;
  * @Author ZengMin
  * @Date 2019/2/17 22:28
  */
-//@Configuration
-public class JsonPFilter {
+@Configuration
+public class CorsFilterConfig {
     /**
      * 跨域配置
      * 页面访问会先发起一个OPTIONS的试探请求

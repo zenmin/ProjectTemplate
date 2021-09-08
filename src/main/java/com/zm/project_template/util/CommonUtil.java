@@ -1,5 +1,8 @@
 package com.zm.project_template.util;
 
+import cn.hutool.crypto.SecureUtil;
+import cn.hutool.crypto.symmetric.AES;
+import com.baomidou.mybatisplus.core.toolkit.IdWorker;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
@@ -9,9 +12,13 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.zm.project_template.common.CommonException;
 import com.zm.project_template.common.constant.CommonConstant;
 import com.zm.project_template.common.constant.DefinedCode;
+import com.zm.project_template.common.constant.RequestConstant;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.codec.Charsets;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
@@ -26,6 +33,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.Function;
@@ -43,19 +51,14 @@ public class CommonUtil {
     /**
      * 业务线程池
      */
-    public static ThreadFactory namedThreadFactory = new ThreadFactoryBuilder().setNameFormat("business-pool-%d").build();
+    public static ThreadFactory businessThreadFactory = new ThreadFactoryBuilder().setNameFormat("business-pool-%d").build();
+
+    public static ExecutorService executorService = new ThreadPoolExecutor(5, 100, 10, TimeUnit.MILLISECONDS, new LinkedBlockingDeque<>(100), businessThreadFactory, new ThreadPoolExecutor.AbortPolicy());
 
     /**
-     * int corePoolSize:线程池维护线程的最小数量.
-     * int maximumPoolSize:线程池维护线程的最大数量.
-     * long keepAliveTime:空闲线程的存活时间.
-     * TimeUnit unit: 时间单位,现有纳秒,微秒,毫秒,秒枚举值.
-     * BlockingQueue<Runnable> workQueue:持有等待执行的任务队列.
-     * RejectedExecutionHandler handler: 用来拒绝一个任务的执行，有两种情况会发生这种情况。
-     * 一是在execute方法中若addIfUnderMaximumPoolSize(command)为false，即线程池已经饱和；
-     * 二是在execute方法中, 发现runState!=RUNNING || poolSize == 0,即已经shutdown,就调用ensureQueuedTaskHandled(Runnable command)，在该方法中有可能调用reject。
+     * 步长为20 即20个数据开一个线程
      */
-    public static ExecutorService executorService = new ThreadPoolExecutor(5, 10, 0, TimeUnit.MILLISECONDS, new LinkedBlockingDeque<>(100), namedThreadFactory, new ThreadPoolExecutor.AbortPolicy());
+    public static final Integer THREAD_LENGTH = 20;
 
     public static ObjectMapper objectMapper = new ObjectMapper();
 
@@ -72,13 +75,27 @@ public class CommonUtil {
     /**
      * 校验手机号
      */
-    public static final String COMPILE_PHONE = "^(13[0-9]|14[5|7]|15[0|1|2|3|4|5|6|7|8|9]|18[0|1|2|3|5|6|7|8|9])\\d{8}$";
-
+    public static final String COMPILE_PHONE = "^(13[0-9]|14[5|7]|15[0|1|2|3|4|5|6|7|8|9]|14[0|1|2|3|4|5|6|7|8|9]|16[0|1|2|3|4|5|6|7|8|9]|17[0|1|2|3|4|5|6|7|8|9]|19[0|1|2|3|4|5|6|7|8|9]|18[0|1|2|3|5|6|7|8|9])\\d{8}$";
 
     /**
      * 校验用户名
      */
     public static final String COMPILE_USERNAME = "^[a-zA-Z][a-zA-Z0-9_]{1,15}$";
+
+    /**
+     * SpringSecurity默认密码编码器
+     */
+    public static final PasswordEncoder BCRYPT_PASSWORD_ENCODER = new BCryptPasswordEncoder();
+
+    /**
+     * AES对称加密 默认密钥SYSTEM_KEY
+     */
+    private static final AES AES = SecureUtil.aes(CommonConstant.SYSTEM_KEY.getBytes(StandardCharsets.UTF_8));
+
+    /**
+     * 请求加密的aes
+     */
+    private static final AES REQUESTAES = SecureUtil.aes(CommonConstant.SYSTEM_KEY.getBytes(StandardCharsets.UTF_8));
 
     /**
      * 常规UUID
@@ -90,7 +107,7 @@ public class CommonUtil {
     }
 
     /**
-     * UUID的hashcode +随机数 重复几率:0.000269
+     * UUID的hashcode +随机数 有几率重复
      *
      * @return
      */
@@ -147,41 +164,63 @@ public class CommonUtil {
     /**
      * 同一时间使用 唯一id 生成订单号
      *
-     * @param date
      * @return
      */
-    public static String getId(Date date) {
-        String dateTime = DateUtil.millisToDateTime(date.getTime(), "yyyyMMddHHmm");
-        return dateTime + "0" + String.valueOf(IdWorker.getId());
-    }
-
-    public static String convertMailContent(String conent, String km, String orderNo) {
-        conent = conent.replace("${km}", " " + km + " ");
-        conent = conent.replace("${orderNo}", " " + orderNo + " ");
-        return conent;
+    public static String getTimeId() {
+        return IdWorker.getTimeId();
     }
 
     /**
+     * 唯一id
+     *
+     * @return
+     */
+    public static String getId() {
+        return IdWorker.getIdStr();
+    }
+
+    /**
+     * 加上咱们salt的md5 用于生成密码之类
+     *
      * @param code
      * @return
      */
     public static String md5Hex(String code) {
-        return DigestUtils.md5Hex(code);
-    }
-
-    public static String md5HexUtf8(String code) {
         try {
-            return DigestUtils.md5Hex(code.getBytes("UTF-8"));
+            return DigestUtils.md5Hex(code.getBytes(Charsets.UTF_8.name()));
         } catch (UnsupportedEncodingException e) {
             e.printStackTrace();
         }
         return code;
     }
 
-    public static String md5Hex(String code, String charset) {
-        return SignUtil.MD5Encode(code, charset);
+    /**
+     * 获取SpringSecurity密码
+     *
+     * @param password
+     * @return
+     */
+    public static String getBCryptPassword(String password) {
+        return BCRYPT_PASSWORD_ENCODER.encode(password);
     }
 
+    /**
+     * 比对SpringSecurity密码
+     *
+     * @param rawPassword    未加密的密码
+     * @param encodePassword 已加密的密码
+     * @return
+     */
+    public static boolean matchBCryptPassword(String rawPassword, String encodePassword) {
+        return BCRYPT_PASSWORD_ENCODER.matches(rawPassword, encodePassword);
+    }
+
+    /**
+     * 原生md5
+     *
+     * @param code
+     * @return
+     */
     public static String md5Hex(byte[] code) {
         return DigestUtils.md5Hex(code);
     }
@@ -199,6 +238,18 @@ public class CommonUtil {
     }
 
     /**
+     * base64加密
+     *
+     * @param code
+     * @return
+     */
+    public static String base64Encode(byte[] code) {
+        BaseEncoding baseEncoding = BaseEncoding.base64();
+        String encode = baseEncoding.encode(code);
+        return encode;
+    }
+
+    /**
      * base64解码
      *
      * @param code
@@ -209,24 +260,19 @@ public class CommonUtil {
         byte[] decode = baseEncoding.decode(code);
         String s = null;
         try {
-            s = new String(decode, "utf-8");
+            s = new String(decode, Charsets.UTF_8.name());
         } catch (UnsupportedEncodingException e) {
             e.printStackTrace();
         }
         return s;
     }
 
-    /**
-     * @param userId
-     * @return
-     */
-    public static String getLoginToken(String userId) {
-        String userIdHex = CommonUtil.md5Hex(userId + CommonConstant.TOKEN_KEY);
-        return userIdHex;
-    }
-
     public static String sha1Hex(String code) {
         return DigestUtils.sha1Hex(code);
+    }
+
+    public static String sha256Hex(String code) {
+        return DigestUtils.sha256Hex(code);
     }
 
     public static String sha1512Hex(String code) {
@@ -234,37 +280,87 @@ public class CommonUtil {
     }
 
     /**
-     * @param dividend
-     * @param divisor
-     * @return 相除
+     * 相加
+     *
+     * @param pre
+     * @param suff
+     * @return
      */
-    public static Double divide(Double dividend, Double divisor) {
-        return dividend == 0.0D && divisor == 0.0D ? 0.0D : divisor == 0.0D ? 1.0D : BigDecimal.valueOf(dividend).divide(BigDecimal.valueOf(divisor), 2, RoundingMode.HALF_UP).doubleValue();
+    public static Double add(double pre, double suff) {
+        return BigDecimal.valueOf(pre).add(BigDecimal.valueOf(suff)).doubleValue();
     }
 
     /**
-     * @param multiplicand
-     * @param multiplier
-     * @return 相乘
+     * 相除 四舍五入 保留两位小数
+     *
+     * @param dividend
+     * @param divisor
+     * @return
      */
-    public static Double multiply(Double multiplicand, Double multiplier) {
-        return multiplicand == 0.0D && multiplier == 0.0D ? 0.0D : multiplier == 0.0D ? 1.0D : BigDecimal.valueOf(multiplicand).multiply(BigDecimal.valueOf(multiplier)).doubleValue();
+    public static Double divide(double dividend, double divisor) {
+        if (dividend == 0d || divisor == 0d) {
+            return 0d;
+        }
+        return BigDecimal.valueOf(dividend).divide(BigDecimal.valueOf(divisor), 2, RoundingMode.HALF_UP).doubleValue();
     }
 
-    public static Long multiplyToLong(Double multiplicand, Double multiplier) {
+    /**
+     * 计算增长率
+     *
+     * @param nowTime  本月 或 本年
+     * @param lastTime 上月 或 上年
+     * @return
+     */
+    public static Double divideAddRate(Double nowTime, Double lastTime) {
+        if (Objects.isNull(nowTime)) {
+            nowTime = 0d;
+        }
+        if (Objects.isNull(lastTime)) {
+            lastTime = 0d;
+        }
+        if (nowTime > 0 && lastTime == 0) {
+            return 1d;
+        }
+        if (nowTime == 0 && lastTime == 0) {
+            return 0d;
+        }
+        double v = BigDecimal.valueOf(subtract(nowTime, lastTime)).divide(BigDecimal.valueOf(lastTime), 4, RoundingMode.HALF_UP).doubleValue();
+        if (v < -1) {
+            v = -1;
+        }
+        return v;
+    }
+
+    /**
+     * 相乘 四舍五入 保留两位小数
+     *
+     * @param multiplicand
+     * @param multiplier
+     * @return
+     */
+    public static Double multiply(double multiplicand, double multiplier) {
+        if (multiplicand == 0d || multiplier == 0d) {
+            return 0d;
+        }
+        return BigDecimal.valueOf(multiplicand).multiply(BigDecimal.valueOf(multiplier)).doubleValue();
+    }
+
+    public static Long multiplyToLong(double multiplicand, double multiplier) {
+        if (multiplicand == 0d || multiplier == 0d) {
+            return 0L;
+        }
         return BigDecimal.valueOf(multiplicand).multiply(BigDecimal.valueOf(multiplier)).longValue();
     }
 
     /**
+     * 相减
+     *
      * @param multiplicand
      * @param multiplier
-     * @return 相减
+     * @return
      */
-    public static Double subtract(Double multiplicand, Double multiplier) {
-        Long big = multiplyToLong(multiplicand, 100d);
-        Long small = multiplyToLong(multiplier, 100d);
-        BigDecimal subtract = BigDecimal.valueOf(big).subtract(BigDecimal.valueOf(small));
-        return divide(subtract.doubleValue(), 100d);
+    public static Double subtract(double multiplicand, double multiplier) {
+        return BigDecimal.valueOf(multiplicand).subtract(BigDecimal.valueOf(multiplier)).doubleValue();
     }
 
     /**
@@ -324,14 +420,16 @@ public class CommonUtil {
      */
     public static String joinQuota(List<?> list) {
         if (list.size() == 1) {
-            return "'" + list.get(0) + "'";
+            return "'" + list.get(0).toString() + "'";
         }
         if (list.size() == 0) {
             return "";
         }
-        final String[] temp = {""};
-        list.stream().forEach(s -> temp[0] += "'" + s + "',");
-        String result = temp[0].substring(0, temp[0].length() - 1);
+        StringBuilder stringBuilder = new StringBuilder();
+        for (Object s : list) {
+            stringBuilder.append("'").append(s).append("'").append(",");
+        }
+        String result = stringBuilder.substring(0, stringBuilder.length() - 1);
         return result;
     }
 
@@ -373,7 +471,7 @@ public class CommonUtil {
      * @param comment
      * @return 根据顺序赋值
      */
-    public static <T> T of(List<String> comment, Class<T> clazz) {
+    public static <T> T valueOfToClass(List<String> comment, Class<T> clazz) {
         try {
             T obj = clazz.newInstance();
             Field[] declaredFields = clazz.getDeclaredFields();
@@ -449,50 +547,90 @@ public class CommonUtil {
     }
 
     public static String unicodeToCn(String unicode) {
-        /** 以 \ u 分割，因为java注释也能识别unicode，因此中间加了一个空格*/
+        // 以 \ u 分割，因为java注释也能识别unicode，因此中间加了一个空格
         String[] strs = unicode.split("\\\\u");
-        String returnStr = "";
+        StringBuilder returnStr = new StringBuilder();
         // 由于unicode字符串以 \ u 开头，因此分割出的第一个字符是""。
         for (int i = 1; i < strs.length; i++) {
-            returnStr += (char) Integer.valueOf(strs[i], 16).intValue();
+            returnStr.append((char) Integer.valueOf(strs[i], 16).intValue());
         }
-        return returnStr;
+        return returnStr.toString();
     }
 
     /**
      * AES加密字符串
      *
      * @param content 需要被加密的字符串
-     * @param KEY     加密需要的密钥
+     * @param key     加密需要的密钥
      * @return 密文
      */
-    public static String AesEncode(String content, String KEY) {
+    public static String aesEncode(String content, String key) {
         if (StringUtils.isBlank(content)) {
             return null;
         }
-        String encrypt = AESUtil.encrypt(content, KEY);
-        return encrypt;
+        try {
+            if (StringUtils.isNotBlank(key)) {
+                AES aes = SecureUtil.aes(key.getBytes(StandardCharsets.UTF_8));
+                String encrypt = aes.encryptHex(content);
+                return encrypt;
+            } else {
+                String encrypt = AES.encryptHex(content);
+                return encrypt;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 
     /**
      * 解密AES加密过的字符串
      *
      * @param code AES加密过过的内容
-     * @param KEY  加密时的密钥
+     * @param key  加密时的密钥
      * @return 明文
      */
-    public static String decrypt(String code, String KEY) {
+
+    public static String aesDecode(String code, String key) {
         if (StringUtils.isBlank(code)) {
             return null;
         }
-        String encrypt = AESUtil.decrypt(code, KEY);
-        return encrypt;
+        try {
+            if (StringUtils.isNotBlank(key)) {
+                AES aes = SecureUtil.aes(key.getBytes(StandardCharsets.UTF_8));
+                String encrypt = aes.decryptStr(code);
+                return encrypt;
+            } else {
+                String encrypt = AES.decryptStr(code);
+                return encrypt;
+            }
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    /**
+     * 解密AES加密过的字符串
+     *
+     * @param code AES加密过过的内容
+     * @return 明文
+     */
+
+    public static String aesDecodeRequest(String code) {
+        if (StringUtils.isBlank(code)) {
+            return null;
+        }
+        try {
+            return REQUESTAES.decryptStr(code);
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     /**
      * 生成六位验证码
-     * length 长度
      *
+     * @param length 长度
      * @return
      */
     public static String genSmsCode(int length) {
@@ -508,7 +646,7 @@ public class CommonUtil {
         List<String> list = Arrays.asList(args);
         list.forEach(o -> {
             if (StringUtils.isBlank(o)) {
-                throw new CommonException(DefinedCode.PARAMS_ERROR, "请填写必填项！");
+                throw new CommonException(DefinedCode.PARAMSERROR, "请填写必填项！");
             }
         });
     }
@@ -522,7 +660,7 @@ public class CommonUtil {
         List<Object> list = Arrays.asList(args);
         list.forEach(o -> {
             if (Objects.isNull(o)) {
-                throw new CommonException(DefinedCode.PARAMS_ERROR, "请填写必填项！");
+                throw new CommonException(DefinedCode.PARAMSERROR, "请填写必填项！");
             }
         });
     }
@@ -578,7 +716,7 @@ public class CommonUtil {
      */
     public static String urlEncode(String str) {
         try {
-            return URLEncoder.encode(str, "UTF-8");
+            return URLEncoder.encode(str, Charsets.UTF_8.name());
         } catch (UnsupportedEncodingException e) {
             e.printStackTrace();
         }
@@ -590,7 +728,7 @@ public class CommonUtil {
      */
     public static String urlDecode(String str) {
         try {
-            return URLDecoder.decode(str, "UTF-8");
+            return URLDecoder.decode(str, Charsets.UTF_8.name());
         } catch (UnsupportedEncodingException e) {
             e.printStackTrace();
         }
@@ -606,32 +744,35 @@ public class CommonUtil {
         if (StringUtils.isNotBlank(idCard)) {
             String reg = "^(\\d{6})(\\d{4})(\\d{2})(\\d{2})(\\d{3})([0-9]|X)$";
             if (!idCard.matches(reg)) {
-                throw new CommonException(DefinedCode.PARAMS_ERROR, "身份证号码格式错误！");
+                throw new CommonException(DefinedCode.PARAMSERROR, "身份证号码格式错误！");
             }
         }
     }
 
 
-    public static void validPassword(String password) {
-        if (password.length() < 6 || password.length() > 18) {
-            throw new CommonException(DefinedCode.PARAMS_ERROR, "密码长度在6~18位之间！");
+    public static void validPassword(String password, String passwordTwo) {
+        if (StringUtils.isNotBlank(passwordTwo)) {
+            if (!StringUtils.equals(password, passwordTwo)) {
+                throw new CommonException(DefinedCode.PARAMSERROR, "两次密码输入不一致！");
+            }
         }
-
+        if (password.length() < 6 || password.length() > 20) {
+            throw new CommonException(DefinedCode.PARAMSERROR, "密码长度在6~20位之间！");
+        }
         if (COMPILE_CHINESE.matcher(password).find()) {
-            throw new CommonException(DefinedCode.PARAMS_ERROR, "密码格式错误，不能包含中文！");
+            throw new CommonException(DefinedCode.PARAMSERROR, "密码格式错误，不能包含中文！");
         }
-
     }
 
     public static void validPhone(String phone) {
         if (!phone.matches(COMPILE_PHONE)) {
-            throw new CommonException(DefinedCode.PARAMS_ERROR, "手机号有误！");
+            throw new CommonException(DefinedCode.PARAMSERROR, "手机号有误！");
         }
     }
 
     public static void validUserName(String username) {
         if (!username.matches(COMPILE_USERNAME)) {
-            throw new CommonException(DefinedCode.PARAMS_ERROR, "格式错误，用户名由2~15位字母/数字/下划线组成！");
+            throw new CommonException(DefinedCode.PARAMSERROR, "格式错误，用户名由2~15位字母/数字/下划线组成！");
         }
     }
 
@@ -640,24 +781,45 @@ public class CommonUtil {
         return t -> seen.add(keyExtractor.apply(t));
     }
 
+
     /**
-     * Es 判断是否有英文  有英文前后加上*
+     * 根据长度计算开多少个线程
      *
-     * @param name
-     * @return
+     * @param size
+     * @return List<Integer> List长度表示多少个线程 Integer表示线程节点的终点
      */
-    public static String fixEsQueryString(String name) {
-        name = name.replace(" ", "");
-        StringBuffer str = new StringBuffer();
-        for (int i = 0; i < name.length(); i++) {
-            char c = name.charAt(i);
-            if (CommonUtil.COMPILE_ENGLISH.matcher(String.valueOf(c)).find()) {
-                str.append("*" + c + "*");
-            } else {
-                str.append(c);
-            }
+    public static List<Integer> getThreadCount(int size) {
+        List<Integer> segment = Lists.newArrayList();
+        if (size <= 0) {
+            return segment;
         }
-        String replace = str.toString().replace("**", "*");
-        return replace.toLowerCase();
+        int count = 1;
+        if (size > THREAD_LENGTH) {
+            count = size / THREAD_LENGTH;
+            // 只允许开十个线程  如果大于十个 则最后一个线程处理剩下的所有任务
+            if (count < 10) {
+                for (int i = 0; i <= count; i++) {
+                    segment.add(i * THREAD_LENGTH);
+                }
+                if (size % THREAD_LENGTH > 0) {
+                    segment.add(THREAD_LENGTH * count + size % THREAD_LENGTH);
+                }
+            } else {
+                for (int i = 0; i <= count; i++) {
+                    if (i < 10) {
+                        segment.add(i * THREAD_LENGTH);
+                    } else {
+                        int step = i * THREAD_LENGTH;
+                        segment.add(step + (size - step));
+                        break;
+                    }
+                }
+            }
+        } else {
+            segment.add(0);
+            segment.add(size);
+        }
+        return segment;
     }
+
 }

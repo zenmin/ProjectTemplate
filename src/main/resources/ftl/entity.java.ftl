@@ -17,11 +17,12 @@ import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 
 /**
-*
-* JPA只用来正向生成数据库表和字段 如果不需要此字段更新 请加上注解@TableField(exist = false)和@Transient
-* @Author ${author}
-* @Date ${.now?string["yyyy-MM-dd HH:mm:ss"]}
-*/
+ * ${table.comment!}
+ * JPA只用来正向生成数据库表和字段 如果不需要此字段更新 请加上注解@TableField(exist = false)和@Transient
+ *
+ * @Author ${author}
+ * @Date ${.now?string["yyyy-MM-dd HH:mm:ss"]}
+ */
 <#if entityLombokModel>
 @Data
     <#if superEntityClass??>
@@ -30,11 +31,9 @@ import lombok.NoArgsConstructor;
 @EqualsAndHashCode(callSuper = false)
     </#if>
 </#if>
-<#if table.convert>
 @TableName("${table.name}")
-</#if>
 <#if swagger2>
-@ApiModel(value="${table.comment!}")
+@ApiModel(value = "${table.comment!}")
 </#if>
 @Table(name = "${table.name}")
 @Entity

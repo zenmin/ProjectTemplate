@@ -1,18 +1,21 @@
 package ${package.Service};
 
-import ${package.Entity}.base.Pager;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.baomidou.mybatisplus.extension.service.IService;
 import ${package.Entity}.${entity};
 import java.util.List;
 
 /**
-*
-* @Author ${author}
-* @Date ${.now?string["yyyy-MM-dd HH:mm:ss"]}
-*/
-public interface ${table.serviceName} {
+ * ${table.comment!}
+ *
+ * @Author ${author}
+ * @Date ${.now?string["yyyy-MM-dd HH:mm:ss"]}
+ */
+public interface ${table.serviceName} extends IService<${entity}> {
 
     /**
      * 查询一条数据
+     *
      * @param id
      * @return
      */
@@ -20,31 +23,25 @@ public interface ${table.serviceName} {
 
     /**
      * 不分页查询
-     * @param ${table.name}
+     *
      * @return
      */
-    List<${entity}> list(${entity} ${table.name});
+    List<${entity}> list();
 
     /**
      * 分页查询
-     * @param pager
-     * @param ${table.name}
+     *
+     * @param page
      * @return
      */
-    Pager listByPage(Pager pager,${entity} ${table.name});
+    Page listByPage(Page page);
 
     /**
-     * 新增或更新
-     * @param ${table.name}
+     * 删除
+     *
+     * @param id
      * @return
      */
-    ${entity} save(${entity} ${table.name});
-
-    /**
-     * 批量删除
-     * @param ids
-     * @return
-     */
-    boolean delete(String ids);
+    boolean delete(String id);
 
 }

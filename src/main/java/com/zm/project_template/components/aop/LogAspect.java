@@ -1,5 +1,6 @@
 package com.zm.project_template.components.aop;
 
+import com.zm.project_template.components.annotation.HandlerMethod;
 import com.zm.project_template.util.CommonUtil;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.Signature;
@@ -8,7 +9,6 @@ import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Pointcut;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.stereotype.Component;
-import org.springframework.web.method.HandlerMethod;
 
 import javax.servlet.http.HttpServletRequest;
 import java.lang.reflect.Method;
@@ -28,14 +28,14 @@ public class LogAspect {
     /**
      * service实现
      */
-    @Pointcut("execution(* com.zhcz.scratchweb.service.*Service.*(..))")
+    @Pointcut("execution(* com.zm.project_template.service.*Service.*(..))")
     private void pointCutService() {
     }
 
     /**
      * controller子包
      */
-    @Pointcut("execution(* com.zhcz.scratchweb.controller.*.*Controller.*(..))")
+    @Pointcut("execution(* com.zm.project_template.controller.*.*Controller.*(..))")
     private void pointCutController() {
     }
 

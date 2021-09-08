@@ -1,6 +1,7 @@
 package com.zm.project_template.common.constant;
 
 
+import com.alibaba.druid.mock.MockBlob;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -10,6 +11,8 @@ import lombok.Setter;
  * @Date 2019/1/17 21:11
  */
 public class CommonConstant {
+
+    public static final String SYSTEM_KEY = "";
 
     public static final String TOKEN_KEY = "A";
 
@@ -48,6 +51,7 @@ public class CommonConstant {
     public static final String LIMIT_ALL = "LIMIT_ALL";       // 所有用户限流 接口每秒请求限制
 
     public static final String LIMIT_USER_IP = "LIMIT_USER_IP";       // IP限流
+
 
     /**
      * 媒体类型

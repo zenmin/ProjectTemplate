@@ -1,66 +1,50 @@
 package ${package.ServiceImpl};
 
-import ${cfg.packageName}.common.constant.CommonConstant;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import ${package.Service}.${table.serviceName};
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.google.common.collect.Lists;
-import ${package.Entity}.base.Pager;
 import ${package.Entity}.${entity};
 import ${package.Mapper}.${entity}Mapper;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.stereotype.Service;
-import ${cfg.packageName}.common.CommonException;
-import java.util.Arrays;
+
 import java.util.List;
 import java.util.Objects;
 
-
 /**
-*
-* @Author ${author}
-* @Date ${.now?string["yyyy-MM-dd HH:mm:ss"]}
-*/
+ * ${table.comment!}
+ *
+ * @Author ${author}
+ * @Date ${.now?string["yyyy-MM-dd HH:mm:ss"]}
+ */
 @Service
-public class ${table.serviceImplName} implements ${table.serviceName} {
+public class ${table.serviceImplName} extends ServiceImpl<${entity}Mapper, ${entity}> implements ${table.serviceName} {
 
     @Autowired
-    ${entity}Mapper ${table.name}Mapper;
+    ${entity}Mapper ${entity?substring(0, 1)?lower_case +  entity?substring(1)}Mapper;
 
     @Override
-    public ${entity} getOne(String id){
-        return ${table.name}Mapper.selectById(id);
+    public ${entity} getOne(String id) {
+        return ${entity?substring(0, 1)?lower_case +  entity?substring(1)}Mapper.selectById(id);
     }
 
     @Override
-    public List<${entity}> list(${entity} ${table.name}) {
-        List<${entity}> ${table.name}s = ${table.name}Mapper.selectList(new QueryWrapper<>(${table.name}));
-        return ${table.name}s;
+    public List<${entity}> list() {
+        List<${entity}> ${entity?substring(0, 1)?lower_case +  entity?substring(1)}s = ${entity?substring(0, 1)?lower_case +  entity?substring(1)}Mapper.selectList(new QueryWrapper<${entity}>().orderByDesc("create_time"));
+        return ${entity?substring(0, 1)?lower_case +  entity?substring(1)}s;
     }
 
     @Override
-    public Pager listByPage(Pager pager, ${entity} ${table.name}) {
-        IPage<${entity}> ${table.name}IPage = ${table.name}Mapper.selectPage(new Page<>(pager.getNum(), pager.getSize()), new QueryWrapper<>(${table.name}));
-        return Pager.of(${table.name}IPage);
+    public Page listByPage(Page page) {
+        Page<${entity}> pageInfo = ${entity?substring(0, 1)?lower_case +  entity?substring(1)}Mapper.selectPage(page, new QueryWrapper<${entity}>().orderByDesc("create_time"));
+        return pageInfo;
     }
 
     @Override
-    @Transactional(rollbackFor = CommonException.class)
-    public ${entity} save(${entity} ${table.name}) {
-        if(Objects.nonNull(${table.name}.getId())){
-            ${table.name}Mapper.updateById(${table.name});
-        }else {
-            ${table.name}Mapper.insert(${table.name});
-        }
-        return ${table.name};
-    }
-
-    @Override
-    @Transactional(rollbackFor = CommonException.class)
-    public boolean delete(String ids) {
-        int i = ${table.name}Mapper.deleteBatchIds(Arrays.asList(ids.split(CommonConstant.MAGIC_SPLIT)));
+    public boolean delete(String id) {
+        int i = ${entity?substring(0, 1)?lower_case +  entity?substring(1)}Mapper.deleteById(id);
         return i > 0;
     }
 

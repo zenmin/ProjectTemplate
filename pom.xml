@@ -18,9 +18,9 @@
         <java.version>1.8</java.version>
         <mybatis.plus.springboot.version>3.1.2</mybatis.plus.springboot.version>
         <druid.version>1.1.10</druid.version>
-        <swagger.springboot.version>1.8.0.RELEASE</swagger.springboot.version>
         <guava.version>26.0-jre</guava.version>
         <fastjson.version>1.2.54</fastjson.version>
+        <knife4j.version>2.0.7</knife4j.version>
     </properties>
 
     <dependencies>
@@ -118,12 +118,6 @@
             <artifactId>httpclient</artifactId>
             <version>4.5.6</version>
         </dependency>
-        <!--Swagger-->
-        <dependency>
-            <groupId>com.spring4all</groupId>
-            <artifactId>swagger-spring-boot-starter</artifactId>
-            <version>${swagger.springboot.version}</version>
-        </dependency>
         <!-- https://mvnrepository.com/artifact/com.belerweb/pinyin4j -->
         <dependency>
             <groupId>com.belerweb</groupId>
@@ -135,6 +129,20 @@
             <groupId>com.alibaba</groupId>
             <artifactId>fastjson</artifactId>
             <version>${fastjson.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.github.xiaoymin</groupId>
+            <artifactId>knife4j-spring-boot-starter</artifactId>
+            <version>${knife4j.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>cn.hutool</groupId>
+            <artifactId>hutool-all</artifactId>
+            <version>5.5.7</version>
         </dependency>
     </dependencies>
 

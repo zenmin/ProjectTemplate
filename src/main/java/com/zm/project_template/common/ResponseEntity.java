@@ -41,6 +41,10 @@ public class ResponseEntity {
         return new ResponseEntity(code, msg, null);
     }
 
+    public static ResponseEntity error(int code, String msg, Object data) {
+        return new ResponseEntity(code, msg, data);
+    }
+
     public static ResponseEntity error() {
         return new ResponseEntity(DefinedCode.ERROR, "失败", null);
     }
