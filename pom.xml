@@ -18,7 +18,7 @@
         <java.version>1.8</java.version>
         <mybatis.plus.springboot.version>3.1.2</mybatis.plus.springboot.version>
         <druid.version>1.1.10</druid.version>
-        <guava.version>26.0-jre</guava.version>
+        <guava.version>29.0-jre</guava.version>
         <fastjson.version>1.2.54</fastjson.version>
         <knife4j.version>2.0.7</knife4j.version>
     </properties>
